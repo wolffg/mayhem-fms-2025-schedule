@@ -140,7 +140,7 @@ func BuildRandomSchedule(
 		}
 	}
 
-	// Return random to random
+	// Return random to an arbitrary seed.
 	if twoVsTwo {
 		rand.Seed(time.Now().UnixNano());
 	}
