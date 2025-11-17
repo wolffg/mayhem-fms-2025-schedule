@@ -82,10 +82,9 @@ func (web *Web) rankingsPdfReportHandler(w http.ResponseWriter, r *http.Request)
 	pdf.CellFormat(colWidths["Rank"], rowHeight, "Rank", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["Team"], rowHeight, "Team", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["RP"], rowHeight, "RP", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(colWidths["Coop"], rowHeight, "Coop", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["Match"], rowHeight, "Match", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["Auto"], rowHeight, "Auto", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(colWidths["Barge"], rowHeight, "Barge", "1", 0, "C", true, 0, "")
+	pdf.CellFormat(colWidths["Lair"], rowHeight, "Barge", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["W-L-T"], rowHeight, "W-L-T", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["DQ"], rowHeight, "DQ", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["Played"], rowHeight, "Played", "1", 1, "C", true, 0, "")
@@ -98,7 +97,7 @@ func (web *Web) rankingsPdfReportHandler(w http.ResponseWriter, r *http.Request)
 		pdf.CellFormat(colWidths["RP"], rowHeight, strconv.Itoa(ranking.RankingPoints), "1", 0, "C", false, 0, "")
 		pdf.CellFormat(colWidths["Match"], rowHeight, strconv.Itoa(ranking.MatchPoints), "1", 0, "C", false, 0, "")
 		pdf.CellFormat(colWidths["Auto"], rowHeight, strconv.Itoa(ranking.AutoPoints), "1", 0, "C", false, 0, "")
-		pdf.CellFormat(colWidths["Kraken"], rowHeight, strconv.Itoa(ranking.EndgameKrakenLairPoints), "1", 0, "C", false, 0, "")
+		pdf.CellFormat(colWidths["Lair"], rowHeight, strconv.Itoa(ranking.EndgameKrakenLairPoints), "1", 0, "C", false, 0, "")
 		record := fmt.Sprintf("%d-%d-%d", ranking.Wins, ranking.Losses, ranking.Ties)
 		pdf.CellFormat(colWidths["W-L-T"], rowHeight, record, "1", 0, "C", false, 0, "")
 		pdf.CellFormat(colWidths["DQ"], rowHeight, strconv.Itoa(ranking.Disqualifications), "1", 0, "C", false, 0, "")
@@ -448,8 +447,15 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 	}
 	matchesPerTeam := 0
 	if len(teams) > 0 {
-		matchesPerTeam = len(matches) * tournament.TeamsPerMatch / len(teams)
+		teamsPerMatch := tournament.TeamsPerMatch
+		if web.arena.EventSettings.TwoVsTwoMode {
+			teamsPerMatch = 4;
+		}
+		matchesPerTeam = len(matches) * teamsPerMatch / len(teams)
 	}
+
+	// Need convert bool to number to track EOLs in reports
+	twov2eol := map[bool]int{true: 1, false: 0}[web.arena.EventSettings.TwoVsTwoMode]
 
 	// The widths of the table columns in mm, stored here so that they can be referenced for each row.
 	colWidths := map[string]float64{"Time": 35, "Match": 40, "Team": 20}
@@ -466,10 +472,15 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 	pdf.CellFormat(colWidths["Match"], rowHeight, "Match", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["Team"], rowHeight, "Red 1", "1", 0, "C", true, 0, "")
 	pdf.CellFormat(colWidths["Team"], rowHeight, "Red 2", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(colWidths["Team"], rowHeight, "Red 3", "1", 0, "C", true, 0, "")
+	if !web.arena.EventSettings.TwoVsTwoMode {
+		pdf.CellFormat(colWidths["Team"], rowHeight, "Red 3", "1", 0, "C", true, 0, "")
+	}
 	pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 1", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 2", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 3", "1", 1, "C", true, 0, "")
+	pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 2", "1",
+		twov2eol, "C", true, 0, "")
+	if !web.arena.EventSettings.TwoVsTwoMode {
+		pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 3", "1", 1, "C", true, 0, "")
+	}
 	pdf.SetFont("Arial", "", 10)
 	for _, match := range matches {
 		// Render break if there is one before this match.
@@ -486,8 +497,9 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 		borderStr := "1"
 		alignStr := "CM"
 		surrogate := false
-		if match.Red1IsSurrogate || match.Red2IsSurrogate || match.Red3IsSurrogate ||
-			match.Blue1IsSurrogate || match.Blue2IsSurrogate || match.Blue3IsSurrogate {
+		if match.Red1IsSurrogate || match.Red2IsSurrogate || match.Blue1IsSurrogate ||
+			match.Blue2IsSurrogate ||
+			(!web.arena.EventSettings.TwoVsTwoMode && (match.Blue3IsSurrogate || match.Red3IsSurrogate)) {
 			// If the match contains surrogates, the row needs to be taller to fit some text beneath team numbers.
 			height = 5.0
 			borderStr = "LTR"
@@ -515,13 +527,19 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 			0,
 			"",
 		)
+
 		pdf.CellFormat(colWidths["Match"], height, match.LongName, borderStr, 0, alignStr, false, 0, "")
 		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Red1), borderStr, 0, alignStr, false, 0, "")
 		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Red2), borderStr, 0, alignStr, false, 0, "")
-		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Red3), borderStr, 0, alignStr, false, 0, "")
+		if !web.arena.EventSettings.TwoVsTwoMode {
+			pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Red3), borderStr, 0, alignStr, false, 0, "")
+		}
 		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue1), borderStr, 0, alignStr, false, 0, "")
-		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue2), borderStr, 0, alignStr, false, 0, "")
-		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue3), borderStr, 1, alignStr, false, 0, "")
+		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue2), borderStr,
+			twov2eol, alignStr, false, 0, "")
+		if !web.arena.EventSettings.TwoVsTwoMode {
+			pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue3), borderStr, 1, alignStr, false, 0, "")
+		}
 		if surrogate {
 			// Render the text that indicates which teams are surrogates.
 			height := 4.0
@@ -534,18 +552,22 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 			pdf.CellFormat(
 				colWidths["Team"], height, surrogateText(match.Red2IsSurrogate), "LBR", 0, "CT", false, 0, "",
 			)
-			pdf.CellFormat(
-				colWidths["Team"], height, surrogateText(match.Red3IsSurrogate), "LBR", 0, "CT", false, 0, "",
-			)
+			if !web.arena.EventSettings.TwoVsTwoMode {
+				pdf.CellFormat(
+					colWidths["Team"], height, surrogateText(match.Red3IsSurrogate), "LBR", 0, "CT", false, 0, "",
+				)
+			}
 			pdf.CellFormat(
 				colWidths["Team"], height, surrogateText(match.Blue1IsSurrogate), "LBR", 0, "CT", false, 0, "",
 			)
 			pdf.CellFormat(
-				colWidths["Team"], height, surrogateText(match.Blue2IsSurrogate), "LBR", 0, "CT", false, 0, "",
+				colWidths["Team"], height, surrogateText(match.Blue2IsSurrogate), "LBR", twov2eol, "CT", false, 0, "",
 			)
-			pdf.CellFormat(
-				colWidths["Team"], height, surrogateText(match.Blue3IsSurrogate), "LBR", 1, "CT", false, 0, "",
-			)
+			if !web.arena.EventSettings.TwoVsTwoMode {
+				pdf.CellFormat(
+					colWidths["Team"], height, surrogateText(match.Blue3IsSurrogate), "LBR", 1, "CT", false, 0, "",
+				)
+			}
 			pdf.SetFont("Arial", "", 10)
 		}
 	}

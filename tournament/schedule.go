@@ -17,6 +17,11 @@ import (
 	"time"
 )
 
+// Note on two player matches:
+// The 3v2-player scheduler is trying harder than what we're doing with 2v2.
+// For 2v2-player we're only loading a single file that contains a schedule with an
+// arbitrary number of playoff matches, and the scheduler then makes as many matches as needs.
+
 const (
 	schedulesDir  = "schedules"
 	TeamsPerMatch = 6
@@ -25,20 +30,40 @@ const (
 // Creates a random schedule for the given parameters and returns it as a list of matches.
 func BuildRandomSchedule(
 	teams []model.Team, scheduleBlocks []model.ScheduleBlock, matchType model.MatchType,
-) ([]model.Match, error) {
+	twoVsTwo bool) ([]model.Match, error) {
+
+	// In 2v2 mode, numMatchesPerTeam is not used
+	localTeamsPerMatch := TeamsPerMatch
+
+	if twoVsTwo {
+		localTeamsPerMatch = 4;
+	}
+
 	// Load the anonymized, pre-randomized match schedule for the given number of teams and matches per team.
 	numTeams := len(teams)
 	numMatches := countMatches(scheduleBlocks)
-	matchesPerTeam := int(float32(numMatches*TeamsPerMatch) / float32(numTeams))
+	matchesPerTeam := int(float32(numMatches*localTeamsPerMatch) / float32(numTeams))
 
 	// Adjust the number of matches to remove any excess from non-perfect block scheduling.
-	numMatches = int(math.Ceil(float64(numTeams) * float64(matchesPerTeam) / TeamsPerMatch))
+	numMatches = int(math.Ceil(float64(numTeams) * float64(matchesPerTeam) / float64(localTeamsPerMatch)))
 
-	file, err := os.Open(
-		fmt.Sprintf("%s/%d_%d.csv", filepath.Join(model.BaseDir, schedulesDir), numTeams, matchesPerTeam),
-	)
+	var filename string
+	var err error
+
+	if numMatches == 0 {
+		return make([]model.Match, 0), nil
+	}
+
+	if twoVsTwo {
+		filename = fmt.Sprintf("%s/2p_%d_0.csv", filepath.Join(model.BaseDir, schedulesDir), numTeams)
+	} else {
+		filename = fmt.Sprintf("%s/%d_%d.csv", filepath.Join(model.BaseDir, schedulesDir), numTeams, matchesPerTeam)
+	}
+
+	file, err := os.Open(filename)
+
 	if err != nil {
-		return nil, fmt.Errorf("No schedule template exists for %d teams and %d matches", numTeams, matchesPerTeam)
+		return nil, fmt.Errorf("No schedule template exists for %d teams and %d matches %s", numTeams, matchesPerTeam, filename)
 	}
 	defer file.Close()
 	reader := csv.NewReader(file)
@@ -46,8 +71,15 @@ func BuildRandomSchedule(
 	if err != nil {
 		return nil, err
 	}
-	if len(csvLines) != numMatches {
-		return nil, fmt.Errorf("Schedule file contains %d matches, expected %d", len(csvLines), numMatches)
+	if twoVsTwo {
+		// Only check that there are enough lines for the matches scheduled
+		if len(csvLines) < numMatches {
+			return nil, fmt.Errorf("Schedule file contains %d matches, expected %d", len(csvLines), numMatches)
+		}
+	} else {
+		if len(csvLines) != numMatches {
+			return nil, fmt.Errorf("Schedule file contains %d matches, expected %d", len(csvLines), numMatches)
+		}
 	}
 
 	// Convert string fields from schedule to integers.
@@ -62,6 +94,12 @@ func BuildRandomSchedule(
 	}
 
 	// Generate a random permutation of the team ordering to fill into the pre-randomized schedule.
+	if twoVsTwo {
+		// We do want a single shuffle, but lock down the random seed
+		// which, in an emergency, will allow us to create the same schedule
+		// if mistakes are made during entry. 
+		rand.Seed(0);
+	}
 	teamShuffle := rand.Perm(numTeams)
 	matches := make([]model.Match, numMatches)
 	for i, anonMatch := range anonSchedule {
@@ -101,6 +139,12 @@ func BuildRandomSchedule(
 			matchIndex++
 		}
 	}
+
+	// Return random to an arbitrary seed.
+	if twoVsTwo {
+		rand.Seed(time.Now().UnixNano());
+	}
+
 
 	return matches, nil
 }
