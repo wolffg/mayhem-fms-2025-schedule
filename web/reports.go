@@ -472,7 +472,7 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 		pdf.CellFormat(colWidths["Team"], rowHeight, "Red 3", "1", 0, "C", true, 0, "")
 	}
 	pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 1", "1", 0, "C", true, 0, "")
-	pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 2", "1", 
+	pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 2", "1",
 		twov2eol, "C", true, 0, "")
 	if !web.arena.EventSettings.TwoVsTwoMode {
 		pdf.CellFormat(colWidths["Team"], rowHeight, "Blue 3", "1", 1, "C", true, 0, "")
@@ -493,9 +493,9 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 		borderStr := "1"
 		alignStr := "CM"
 		surrogate := false
-		if match.Red1IsSurrogate || match.Red2IsSurrogate ||  match.Blue1IsSurrogate ||
-			match.Blue2IsSurrogate || 
-				(!web.arena.EventSettings.TwoVsTwoMode && (match.Blue3IsSurrogate || match.Red3IsSurrogate  ))  {
+		if match.Red1IsSurrogate || match.Red2IsSurrogate || match.Blue1IsSurrogate ||
+			match.Blue2IsSurrogate ||
+			(!web.arena.EventSettings.TwoVsTwoMode && (match.Blue3IsSurrogate || match.Red3IsSurrogate)) {
 			// If the match contains surrogates, the row needs to be taller to fit some text beneath team numbers.
 			height = 5.0
 			borderStr = "LTR"
@@ -531,7 +531,7 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 			pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Red3), borderStr, 0, alignStr, false, 0, "")
 		}
 		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue1), borderStr, 0, alignStr, false, 0, "")
-		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue2), borderStr, 
+		pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue2), borderStr,
 			twov2eol, alignStr, false, 0, "")
 		if !web.arena.EventSettings.TwoVsTwoMode {
 			pdf.CellFormat(colWidths["Team"], height, formatTeam(match.Blue3), borderStr, 1, alignStr, false, 0, "")

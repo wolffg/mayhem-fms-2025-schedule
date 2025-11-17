@@ -247,8 +247,6 @@ func (web *Web) allianceSelectionFinalizeHandler(w http.ResponseWriter, r *http.
 		return
 	}
 
-	
-
 	// Signal displays of the bracket to update themselves.
 	web.arena.ScorePostedNotifier.Notify()
 

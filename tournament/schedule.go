@@ -9,8 +9,8 @@ import (
 	"encoding/csv"
 	"fmt"
 	"github.com/Team254/cheesy-arena/model"
-	"math"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -19,8 +19,8 @@ import (
 )
 
 // Note on two player matches:
-// The 3v2-player scheduler is trying harder than what we're doing with 2v2.  
-// For 2v2-player we're only loading a single file that contains a schedule with an 
+// The 3v2-player scheduler is trying harder than what we're doing with 2v2.
+// For 2v2-player we're only loading a single file that contains a schedule with an
 // arbitrary number of playoff matches, and the scheduler then makes as many matches as needs.
 
 const (
@@ -31,7 +31,7 @@ const (
 // Creates a random schedule for the given parameters and returns it as a list of matches.
 func BuildRandomSchedule(
 	teams []model.Team, scheduleBlocks []model.ScheduleBlock, matchType model.MatchType,
-twoVsTwo bool) ([]model.Match, error) {
+	twoVsTwo bool) ([]model.Match, error) {
 	// Load the anonymized, pre-randomized match schedule for the given number of teams and matches per team.
 	numTeams := len(teams)
 	numMatches := countMatches(scheduleBlocks)
@@ -40,21 +40,21 @@ twoVsTwo bool) ([]model.Match, error) {
 	// Adjust the number of matches to remove any excess from non-perfect block scheduling.
 	numMatches = int(math.Ceil(float64(numTeams) * float64(matchesPerTeam) / TeamsPerMatch))
 
-	var filename string;
-    var err error
+	var filename string
+	var err error
 
 	if numMatches == 0 {
 		return make([]model.Match, 0), nil
 	}
 
 	if twoVsTwo {
-		filename = fmt.Sprintf("%s/2p_%d_0.csv", filepath.Join(model.BaseDir, schedulesDir), numTeams);
-		log.Print("twoVsTwo match %s", filename)	
+		filename = fmt.Sprintf("%s/2p_%d_0.csv", filepath.Join(model.BaseDir, schedulesDir), numTeams)
+		log.Print("twoVsTwo match %s", filename)
 	} else {
-		filename = fmt.Sprintf("%s/%d_%d.csv", filepath.Join(model.BaseDir, schedulesDir), numTeams, matchesPerTeam);
+		filename = fmt.Sprintf("%s/%d_%d.csv", filepath.Join(model.BaseDir, schedulesDir), numTeams, matchesPerTeam)
 	}
 
-	file, err := os.Open(filename);
+	file, err := os.Open(filename)
 
 	if err != nil {
 		return nil, fmt.Errorf("No schedule template exists for %d teams and %d matches %s", numTeams, matchesPerTeam, filename)
