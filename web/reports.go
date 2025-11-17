@@ -447,7 +447,11 @@ func (web *Web) schedulePdfReportHandler(w http.ResponseWriter, r *http.Request)
 	}
 	matchesPerTeam := 0
 	if len(teams) > 0 {
-		matchesPerTeam = len(matches) * tournament.TeamsPerMatch / len(teams)
+		teamsPerMatch := tournament.TeamsPerMatch
+		if web.arena.EventSettings.TwoVsTwoMode {
+			teamsPerMatch = 4;
+		}
+		matchesPerTeam = len(matches) * teamsPerMatch / len(teams)
 	}
 
 	// Need convert bool to number to track EOLs in reports

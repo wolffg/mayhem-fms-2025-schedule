@@ -31,13 +31,21 @@ const (
 func BuildRandomSchedule(
 	teams []model.Team, scheduleBlocks []model.ScheduleBlock, matchType model.MatchType,
 	twoVsTwo bool) ([]model.Match, error) {
+
+	// In 2v2 mode, numMatchesPerTeam is not used
+	localTeamsPerMatch := TeamsPerMatch
+
+	if twoVsTwo {
+		localTeamsPerMatch = 4;
+	}
+
 	// Load the anonymized, pre-randomized match schedule for the given number of teams and matches per team.
 	numTeams := len(teams)
 	numMatches := countMatches(scheduleBlocks)
-	matchesPerTeam := int(float32(numMatches*TeamsPerMatch) / float32(numTeams))
+	matchesPerTeam := int(float32(numMatches*localTeamsPerMatch) / float32(numTeams))
 
 	// Adjust the number of matches to remove any excess from non-perfect block scheduling.
-	numMatches = int(math.Ceil(float64(numTeams) * float64(matchesPerTeam) / TeamsPerMatch))
+	numMatches = int(math.Ceil(float64(numTeams) * float64(matchesPerTeam) / float64(localTeamsPerMatch)))
 
 	var filename string
 	var err error
@@ -86,6 +94,12 @@ func BuildRandomSchedule(
 	}
 
 	// Generate a random permutation of the team ordering to fill into the pre-randomized schedule.
+	if twoVsTwo {
+		// We do want a single shuffle, but lock down the random seed
+		// which, in an emergency, will allow us to create the same schedule
+		// if mistakes are made during entry. 
+		rand.Seed(0);
+	}
 	teamShuffle := rand.Perm(numTeams)
 	matches := make([]model.Match, numMatches)
 	for i, anonMatch := range anonSchedule {
@@ -125,6 +139,12 @@ func BuildRandomSchedule(
 			matchIndex++
 		}
 	}
+
+	// Return random to random
+	if twoVsTwo {
+		rand.Seed(time.Now().UnixNano());
+	}
+
 
 	return matches, nil
 }
