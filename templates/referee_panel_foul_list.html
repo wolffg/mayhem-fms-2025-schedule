@@ -10,7 +10,7 @@
 <div class="foul {{.alliance}}-foul">
   <div>{{add .index 1}}</div>
   <div class="type-button" onclick="toggleFoulType('{{.alliance}}', {{.index}});">
-    {{if .foul.IsMajor}}Major{{else}}Minor{{end}} Foul
+    {{if .foul.IsMajor}}Tech{{else}}Minor{{end}} Foul
   </div>
   <div class="team-buttons">
     {{if eq .alliance "red"}}
@@ -32,8 +32,8 @@
     {{range $rule := .rules}}
     {{if eq $.foul.IsMajor $rule.IsMajor}}
     <option value="{{$rule.Id}}" {{if eq $.foul.RuleId $rule.Id}} selected{{end}}>{{$rule.RuleNumber}}
-      [{{if $rule.IsRankingPoint}}{{if $rule.IsMajor}}Major{{else}}Minor{{end}} Foul + RP
-      {{else}}{{if $rule.IsMajor}}Major{{else}}Minor{{end}} Foul{{end}}]: {{$rule.Description}}
+      [{{if $rule.IsRankingPoint}}{{if $rule.IsMajor}}Tech{{else}}Minor{{end}} Foul + RP
+      {{else}}{{if $rule.IsMajor}}Tech{{else}}Minor{{end}} Foul{{end}}]: {{$rule.Description}}
     </option>
     {{end}}
     {{end}}

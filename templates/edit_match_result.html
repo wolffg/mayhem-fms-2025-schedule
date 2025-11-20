@@ -137,8 +137,8 @@ UI for manually editing the result for a match.
         <select class="form-control" name="{{"{{../alliance}}"}}Foul{{"{{@index}}"}}RuleId">
         {{range $rule := .Rules}}
         <option value="{{$rule.Id}}">{{$rule.RuleNumber}}
-          [{{if $rule.IsRankingPoint}}{{if $rule.IsMajor}}Major{{else}}Minor{{end}} Foul + RP
-          {{else}}{{if $rule.IsMajor}}Major{{else}}Minor{{end}} Foul{{end}}]: {{$rule.Description}}
+          [{{if $rule.IsRankingPoint}}{{if $rule.IsMajor}}Tech{{else}}Minor{{end}} Foul + RP
+          {{else}}{{if $rule.IsMajor}}Tech{{else}}Minor{{end}} Foul{{end}}]: {{$rule.Description}}
         </option>
         {{end}}
         </select>
