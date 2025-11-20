@@ -82,7 +82,7 @@ const resetFoulCounts = function () {
 }
 
 const addFoul = function (alliance, isMajor) {
-  const foulType = `${alliance}-${isMajor ? "major" : "minor"}`;
+  const foulType = `${alliance}-${isMajor ? "tech" : "minor"}`;
   localFoulCounts[foulType] += 1;
   websocket.send("addFoul", {Alliance: alliance, IsMajor: isMajor});
   renderLocalFoulCounts();
