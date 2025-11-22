@@ -81,7 +81,7 @@ func (web *Web) scheduleGeneratePostHandler(w http.ResponseWriter, r *http.Reque
 		)
 		return
 	}
-	if len(teams) < 6 {
+	if len(teams) < 4 {
 		web.renderSchedule(
 			w,
 			r,
